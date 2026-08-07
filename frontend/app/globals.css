@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-canvas: #0f1419;
+  --color-panel: #161b22;
+  --color-border: #2a3340;
+  --color-accent: #3d8bfd;
+  --color-muted: #8b9bb4;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-canvas text-slate-100 antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(61, 139, 253, 0.18), transparent),
+    linear-gradient(180deg, #0f1419 0%, #0c1015 100%);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3340 transparent;
+}

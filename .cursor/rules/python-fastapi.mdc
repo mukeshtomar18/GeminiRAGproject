@@ -1,0 +1,51 @@
+---
+description: Python and FastAPI coding standards for the RAG backend
+globs: backend/**/*.py,tests/**/*.py
+alwaysApply: false
+---
+
+# Python & FastAPI Standards
+
+## Style
+
+- Python 3.11+, type hints on public functions and API boundaries
+- Format with Ruff/Black conventions; keep imports ordered and unused imports removed
+- Prefer `async def` for I/O-bound FastAPI routes and clients
+- Use Pydantic v2 models for all request/response/config schemas
+
+## Structure
+
+```
+backend/
+  app/
+    api/           # routers only — thin handlers
+    core/          # config, logging, security
+    models/        # Pydantic schemas
+    services/      # business logic (embed, retrieve, generate)
+    pipelines/     # ingest/chunk/index orchestration
+    clients/       # Gemini, Pinecone wrappers
+  main.py
+```
+
+## API rules
+
+```python
+# ❌ BAD — fat route with mixed concerns
+@app.post("/query")
+async def query(q: str):
+    emb = genai.embed(q)
+    hits = pinecone.query(emb)
+    return genai.generate(hits, q)
+
+# ✅ GOOD — thin route, injected service
+@router.post("/query", response_model=QueryResponse)
+async def query(body: QueryRequest, rag: RagService = Depends(get_rag_service)):
+    return await rag.answer(body)
+```
+
+## Errors & config
+
+- Use FastAPI `HTTPException` or domain exceptions mapped in handlers
+- Load config via `pydantic-settings` from env; validate at startup
+- Centralize embedding modality limits (token/page/duration/count caps) in settings — validate uploads against them before embed
+- Log with structured context (`request_id`, `doc_id`, `modality`) — never log API keys

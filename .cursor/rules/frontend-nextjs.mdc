@@ -1,0 +1,90 @@
+---
+description: Next.js App Router + TypeScript + Tailwind ChatGPT-like multimodal chat UI standards
+globs: frontend/**/*.{ts,tsx,js,jsx,css}
+alwaysApply: false
+---
+
+# Frontend Standards
+
+## Stack (non-negotiable)
+
+- **Language**: TypeScript (strict)
+- **Framework**: Next.js App Router (`app/`)
+- **Styling**: Tailwind CSS utility classes; shared tokens via `tailwind.config` / CSS variables
+- Call FastAPI over REST (`NEXT_PUBLIC_API_URL`); never call Gemini/Pinecone from the browser
+
+## Primary UI: ChatGPT-like interface (required)
+
+Conversational chat layout — not a form dashboard.
+
+### Layout
+
+```
+┌─────────────────────────────────────────┐
+│  header / brand                         │
+├─────────────────────────────────────────┤
+│  message thread (scrollable)            │
+│  - user bubbles                         │
+│  - assistant bubbles + citations        │
+├─────────────────────────────────────────┤
+│  attachment chips / previews            │
+│  [+] composer: textarea + send          │
+└─────────────────────────────────────────┘
+```
+
+- Full-height chat shell; thread scrolls; composer pinned to bottom
+- User right-aligned; assistant left-aligned with RAG citations
+- Empty state invites a question or file attach
+- Show streaming / pending feedback while waiting on the API
+
+### Composer & attachments (required)
+
+Match **Gemini Embedding 2 Preview** limits (see `embedding-modality-specs`):
+
+| Modality | Accept only | UI behavior / limit |
+|----------|-------------|---------------------|
+| Text | paste / `.txt` | Cap ~8,192 tokens (~6,000 words); show over-limit error |
+| PDF | `.pdf` | Filename + size; long PDFs **auto-split every 6 pages** on the backend |
+| Image | `.png`, `.jpg`, `.jpeg` | Thumbnail; max **6 images** per request |
+| Audio | `.mp3`, `.wav` | Filename + duration; reject if **> 80s** |
+| Video | `.mp4`, `.mov` | Filename + duration; reject if **> 120s** |
+
+- **Upload** is a separate control: selecting/dropping files uploads & indexes immediately via `POST /api/upload`
+- **Send** sends the text question only via `POST /api/chat` (no combined file+message submit)
+- Show per-file status: Checking → Uploading N% → Indexing → Uploaded / Failed
+
+## Structure
+
+```
+frontend/
+  app/
+    layout.tsx
+    page.tsx              # chat shell entry
+    globals.css           # Tailwind layers + CSS variables
+  components/
+    chat/                 # Thread, Bubble, Composer, AttachMenu, CitationList
+  lib/
+    api.ts                # typed fetch to FastAPI
+    attachments.ts        # accept lists, validation, previews
+    types.ts              # Message, Citation, Modality
+  public/
+  tailwind.config.ts
+  tsconfig.json
+```
+
+## TypeScript & React
+
+- Prefer Server Components by default; mark chat interactivity with `"use client"`
+- Typed props and API DTOs; no `any` unless bridging untyped third-party data
+- Colocate chat state (messages, attachments, status) in focused client components/hooks
+
+## Tailwind
+
+- Utility-first; extract repeated patterns into components, not giant `@apply` blocks
+- Mobile-first breakpoints; composer and attach menu usable on narrow viewports
+- Light chrome for bubbles/chips; subtle motion for send/receive and typing indicator
+
+## States
+
+- Empty, loading, upload progress, per-file validation errors, API errors — all explicit
+- Assistant replies must show citations (source, modality, id/link when available)

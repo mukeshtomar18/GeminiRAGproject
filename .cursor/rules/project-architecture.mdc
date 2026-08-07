@@ -1,0 +1,47 @@
+---
+description: Core architecture, stack, and delivery standards for the Gemini multimodal RAG enterprise project
+alwaysApply: true
+---
+
+# Project Architecture
+
+## Stack (non-negotiable)
+
+- **Embeddings / inference**: Google Gemini (`gemini-embedding-2-preview` for embeddings; Gemini for generation)
+- **Vector DB**: Pinecone
+- **Backend**: Python 3.11+ and FastAPI
+- **Frontend**: TypeScript + Next.js (App Router) + Tailwind CSS; ChatGPT-like chat UI with attach for audio, video, image, PDF, and text
+- **Secrets**: Gemini and Pinecone keys via environment / `.env` only — never hardcode (backend); frontend may only expose `NEXT_PUBLIC_API_URL`
+
+## Repository layout
+
+```
+backend/          # FastAPI app, services, pipelines
+frontend/         # Next.js App Router (TypeScript + Tailwind)
+docs/             # Architecture and ADRs only when needed
+tests/            # Unit, integration, API tests
+.env.example      # Required env vars (no real secrets)
+```
+
+## Engineering principles
+
+- Prefer small, composable modules over monoliths
+- Separate concerns: ingest → embed → index → retrieve → generate → present
+- Every public API has typed request/response models (Pydantic)
+- Fail loudly with structured errors; never swallow exceptions silently
+- No speculative features, TODOs-as-code, or unused abstractions
+- Match existing patterns once the codebase exists; do not invent parallel styles
+
+## Definition of done
+
+- Code runs locally with documented env vars
+- Happy path + failure path covered for critical RAG flows
+- No secrets in source, logs, or commits
+- Naming is clear; comments only for non-obvious intent
+---
+
+# Change discipline
+
+- Touch only files required for the task
+- Do not add markdown docs unless asked
+- Prefer editing existing modules over creating new ones

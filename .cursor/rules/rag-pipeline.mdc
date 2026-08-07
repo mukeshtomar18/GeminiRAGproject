@@ -1,0 +1,34 @@
+---
+description: Multimodal RAG pipeline standards for Gemini Embedding 2 and Pinecone
+globs: backend/**/*rag*,backend/**/pipelines/**/*.py,backend/**/services/**/*.py,backend/**/clients/**/*.py
+alwaysApply: false
+---
+
+# Multimodal RAG Pipeline
+
+## Modalities
+
+Support ingest and retrieval for **text, PDF, image, audio, and video** via Gemini Embedding 2 Preview. Formats and hard limits are defined in `embedding-modality-specs` (8,192-token text; PNG/JPEG ≤6 images; MP4/MOV ≤120s; MP3/WAV ≤80s; PDF ≤6 pages **per embed**, with long PDFs auto-split into 6-page segments). Normalize each modality into a common document/chunk record before indexing.
+
+## Pipeline stages (keep separate)
+
+1. **Ingest** — validate against embedding modality specs (type, count, duration, pages); reject early except PDF length
+2. **Chunk / segment** — modality-aware segmentation within those limits (PDF → sequential ≤6-page windows; media within duration caps)
+3. **Extract content** — PDF text via parser; **image / video / audio** via Gemini multimodal describe/transcribe into text for generation context
+4. **Embed** — call Gemini embedding model only through a dedicated client wrapper
+5. **Index** — upsert vectors + extracted text metadata to Pinecone
+6. **Retrieve** — similarity search with filters (modality, tenant, doc_id)
+7. **Generate** — Gemini inference with retrieved **extracted content**; cite sources in the response
+
+## Pinecone metadata (minimum)
+
+- `source_id`, `modality`, `chunk_index`, `mime_type`, `created_at`
+- Optional: `title`, `page`, `page_start`, `page_end`, `timestamp_start`, `timestamp_end`, `tenant_id`
+
+## Rules
+
+- Never call Gemini/Pinecone SDKs directly from routers
+- Embeddings and generation use the project Gemini API key from config
+- Store content references/metadata in Pinecone; avoid dumping huge binaries into vector metadata
+- Retrieval responses must return enough provenance for UI citation
+- Keep chunk size and top-k configurable via settings, not hardcoded magic numbers scattered in code

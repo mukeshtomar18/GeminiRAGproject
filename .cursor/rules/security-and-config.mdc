@@ -1,0 +1,38 @@
+---
+description: Security, secrets, and configuration standards for the enterprise RAG project
+alwaysApply: true
+---
+
+# Security & Configuration
+
+## Secrets
+
+- Store `GEMINI_API_KEY`, `PINECONE_API_KEY`, and related config in `.env`
+- Ship `.env.example` with placeholder values only
+- Add `.env` to `.gitignore`; never commit credentials, service accounts, or key files
+- Frontend (Next.js) must not receive or store provider API keys; only `NEXT_PUBLIC_API_URL` (and similar non-secret public config) may be client-exposed
+
+## API & data hygiene
+
+- Validate all uploads (type, size, content) before processing
+- Sanitize user query text before logging
+- Prefer least-privilege Pinecone indexes/namespaces (e.g. per tenant or environment)
+- Do not log raw document contents or full embeddings in production logs
+
+## Config checklist
+
+```
+GEMINI_API_KEY=
+GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview
+GEMINI_GENERATION_MODEL=   # set explicit model id in code/config
+PINECONE_API_KEY=
+PINECONE_INDEX_NAME=
+PINECONE_ENVIRONMENT=      # if required by client version
+APP_ENV=development
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Dependency safety
+
+- Pin versions in backend `requirements.txt` / lockfile and frontend `package.json` / lockfile
+- Do not add packages without a clear need in the RAG/API or chat UI path

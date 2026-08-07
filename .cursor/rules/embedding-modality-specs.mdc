@@ -1,0 +1,24 @@
+---
+description: Gemini Embedding 2 Preview supported modalities, formats, and hard limits (source of truth)
+alwaysApply: true
+---
+
+# Embedding Modality Specs (Gemini Embedding 2 Preview)
+
+Canonical limits for ingest, validation, and the chat attach UI. **Reject or truncate before embed** if a request exceeds these.
+
+| Modality | Allowed formats | Hard limit |
+|----------|-----------------|------------|
+| **Text** | Plain text / pasted content | Up to **8,192 tokens** (~6,000 words) |
+| **Image** | **PNG**, **JPEG** (`.png`, `.jpg`, `.jpeg`) | Up to **6 images** per request |
+| **Video** | **MP4**, **MOV** (`.mp4`, `.mov`) | Up to **120 seconds** (2 minutes) |
+| **Audio** | **MP3**, **WAV** (`.mp3`, `.wav`) | Up to **80 seconds** |
+| **Document** | **PDF** (`.pdf`) | Up to **6 pages per embed call**; longer PDFs are **auto-split into 6-page segments** on upload |
+
+## Enforcement
+
+- Backend validates MIME/extension, counts, duration, and page count **before** calling the embedding API
+- PDFs longer than 6 pages are split into sequential ≤6-page windows, each embedded and indexed separately (shared `source_id`)
+- Frontend accept lists and client checks must match allowed formats (same formats; no webp/gif/webm/m4a/ogg/etc.)
+- Surpass limits (except PDF length, which is split) → clear user-facing error; do not silently drop modalities
+- Keep these constants in one shared config module per side (`backend` settings + `frontend/lib` constants) — do not scatter magic numbers
